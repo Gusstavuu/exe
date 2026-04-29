@@ -1,58 +1,97 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Jogo de Cliques</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #1e1e2f;
-      color: white;
-    }
+<meta charset="UTF-8">
+<title>Jogo de Cliques</title>
 
-    #score {
-      font-size: 24px;
-      margin: 10px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #1e1e2f;
+  color: white;
+}
 
-    .game-area {
-      display: grid;
-      grid-template-columns: repeat(4, 80px);
-      gap: 15px;
-      justify-content: center;
-      margin-top: 20px;
-    }
+h1 {
+  margin-top: 20px;
+}
 
-    .box {
-      width: 80px;
-      height: 80px;
-      background: gray;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.1s, background 0.2s;
-    }
+#info {
+  margin: 10px;
+  font-size: 18px;
+}
 
-    .box:hover {
-      transform: scale(1.1);
-    }
+.game-area {
+  display: grid;
+  grid-template-columns: repeat(4, 80px);
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
 
-    .good { background: #4caf50; }
-    .bad { background: #f44336; }
-  </style>
+.box {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.box:active {
+  transform: scale(0.9);
+}
+
+.good { background: #4caf50; }
+.bad { background: #f44336; }
+
+button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+
 </head>
+
 <body>
 
 <h1>🎯 Jogo de Cliques</h1>
-<div id="score">Pontos: 0</div>
+
+<div id="info">
+  Pontos: <span id="score">0</span> |
+  Tempo: <span id="time">30</span>s |
+  Recorde: <span id="highscore">0</span>
+</div>
+
 <div class="game-area" id="game"></div>
+
+<button onclick="startGame()">Reiniciar</button>
 
 <script>
 const gameArea = document.getElementById("game");
 const scoreDisplay = document.getElementById("score");
+const timeDisplay = document.getElementById("time");
+const highscoreDisplay = document.getElementById("highscore");
 
 let score = 0;
+let time = 30;
+let gameInterval;
+let boxInterval;
+
 const MAX_BOXES = 8;
+
+// som simples
+function playSound(freq) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(() => osc.stop(), 100);
+}
 
 function createBox() {
   if (gameArea.children.length >= MAX_BOXES) return;
@@ -63,22 +102,67 @@ function createBox() {
   const isGood = Math.random() > 0.3;
   box.classList.add(isGood ? "good" : "bad");
 
-  box.addEventListener("click", () => {
-    score += isGood ? 1 : -1;
-    scoreDisplay.textContent = "Pontos: " + score;
+  box.onclick = () => {
+    if (isGood) {
+      score++;
+      playSound(600);
+    } else {
+      score--;
+      playSound(200);
+    }
+
+    scoreDisplay.textContent = score;
     box.remove();
-  });
+  };
 
   gameArea.appendChild(box);
 
-  // caixa desaparece sozinha depois de um tempo
   setTimeout(() => {
     if (box.parentNode) box.remove();
   }, 1500);
 }
 
-// gera caixas continuamente
-setInterval(createBox, 800);
+function updateHighscore() {
+  let highscore = localStorage.getItem("highscore") || 0;
+  if (score > highscore) {
+    localStorage.setItem("highscore", score);
+    highscore = score;
+  }
+  highscoreDisplay.textContent = highscore;
+}
+
+function startGame() {
+  // reset
+  score = 0;
+  time = 30;
+  gameArea.innerHTML = "";
+  scoreDisplay.textContent = score;
+  timeDisplay.textContent = time;
+
+  clearInterval(gameInterval);
+  clearInterval(boxInterval);
+
+  updateHighscore();
+
+  // timer
+  gameInterval = setInterval(() => {
+    time--;
+    timeDisplay.textContent = time;
+
+    if (time <= 0) {
+      clearInterval(gameInterval);
+      clearInterval(boxInterval);
+      updateHighscore();
+      alert("Fim de jogo! Pontuação: " + score);
+    }
+  }, 1000);
+
+  // geração de caixas
+  boxInterval = setInterval(createBox, 700);
+}
+
+// iniciar automaticamente
+startGame();
 </script>
 
 </body>
