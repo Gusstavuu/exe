@@ -3,37 +3,61 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Jogo de Cliques</title>
+<title>Jogo de Cliques PRO</title>
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
+  margin: 0;
+  font-family: Arial;
   background: #1e1e2f;
   color: white;
+  text-align: center;
 }
 
-#info {
-  margin: 10px;
+/* telas */
+.screen {
+  display: none;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.active {
+  display: flex;
+}
+
+/* botão */
+button {
+  padding: 12px 25px;
   font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
+/* HUD */
+#hud {
+  margin-top: 10px;
+}
+
+/* grid */
 .game-area {
   display: grid;
   grid-template-columns: repeat(4, 80px);
-  gap: 15px;
+  gap: 12px;
   justify-content: center;
   margin-top: 20px;
 }
 
+/* caixas */
 .box {
   width: 80px;
   height: 80px;
   border-radius: 10px;
-  cursor: pointer;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   font-size: 24px;
   animation: pop 0.2s ease;
 }
@@ -44,15 +68,8 @@ body {
 .bomb { background: black; }
 
 @keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-button {
-  margin-top: 15px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }
 </style>
 
@@ -60,35 +77,80 @@ button {
 
 <body>
 
-<h1>🎯 Jogo de Cliques</h1>
+<!-- MENU -->
 
-<div id="info">
-  Pontos: <span id="score">0</span> |
-  Tempo: <span id="time">30</span>s |
-  Vidas: <span id="lives">3</span> ❤️ |
-  Recorde: <span id="highscore">0</span>
+<div id="menu" class="screen active">
+  <h1>🎯 Jogo de Cliques</h1>
+  <button onclick="startGame()">▶️ Jogar</button>
 </div>
 
-<div class="game-area" id="game"></div>
+<!-- JOGO -->
 
-<button onclick="startGame()">Reiniciar</button>
+<div id="gameScreen" class="screen">
+  <div id="hud">
+    Pontos: <span id="score">0</span> |
+    Tempo: <span id="time">30</span> |
+    Vidas: <span id="lives">3</span>
+  </div>
+
+  <div class="game-area" id="game"></div>
+
+<button onclick="toggleSound()">🔊 Som</button>
+
+</div>
+
+<!-- GAME OVER -->
+
+<div id="gameOver" class="screen">
+  <h1>💀 Game Over</h1>
+  <p>Pontuação: <span id="finalScore"></span></p>
+  <button onclick="goMenu()">Voltar</button>
+</div>
 
 <script>
+const menu = document.getElementById("menu");
+const gameScreen = document.getElementById("gameScreen");
+const gameOverScreen = document.getElementById("gameOver");
+
 const gameArea = document.getElementById("game");
+
 const scoreDisplay = document.getElementById("score");
 const timeDisplay = document.getElementById("time");
 const livesDisplay = document.getElementById("lives");
-const highscoreDisplay = document.getElementById("highscore");
+const finalScore = document.getElementById("finalScore");
 
-let score = 0;
-let time = 30;
-let lives = 3;
-
-let gameInterval;
-let boxInterval;
+let score, time, lives;
+let gameInterval, boxInterval;
+let soundOn = true;
 
 const MAX_BOXES = 8;
 
+/* música simples */
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(freq) {
+  if (!soundOn) return;
+
+  const osc = audioCtx.createOscillator();
+  osc.frequency.value = freq;
+  osc.connect(audioCtx.destination);
+  osc.start();
+  setTimeout(() => osc.stop(), 100);
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+}
+
+/* telas */
+function show(screen) {
+  menu.classList.remove("active");
+  gameScreen.classList.remove("active");
+  gameOverScreen.classList.remove("active");
+  screen.classList.add("active");
+}
+
+/* jogo */
 function createBox() {
   if (gameArea.children.length >= MAX_BOXES) return;
 
@@ -115,12 +177,13 @@ function createBox() {
   }
 
   box.onclick = () => {
-    if (type === "good") score++;
-    if (type === "bad") score--;
-    if (type === "gold") score += 3;
+    if (type === "good") { score++; playSound(600); }
+    if (type === "bad") { score--; playSound(200); }
+    if (type === "gold") { score += 3; playSound(900); }
     if (type === "bomb") {
       lives--;
       livesDisplay.textContent = lives;
+      playSound(100);
     }
 
     scoreDisplay.textContent = score;
@@ -140,32 +203,18 @@ function createBox() {
   }, 1500);
 }
 
-function updateHighscore() {
-  let highscore = localStorage.getItem("highscore") || 0;
-  if (score > highscore) {
-    localStorage.setItem("highscore", score);
-    highscore = score;
-  }
-  highscoreDisplay.textContent = highscore;
-}
-
-function endGame() {
-  clearInterval(gameInterval);
-  clearInterval(boxInterval);
-  updateHighscore();
-  alert("💀 Game Over! Pontos: " + score);
-}
-
 function startGame() {
   score = 0;
   time = 30;
   lives = 3;
 
-  gameArea.innerHTML = "";
-
   scoreDisplay.textContent = score;
   timeDisplay.textContent = time;
   livesDisplay.textContent = lives;
+
+  gameArea.innerHTML = "";
+
+  show(gameScreen);
 
   clearInterval(gameInterval);
   clearInterval(boxInterval);
@@ -173,14 +222,23 @@ function startGame() {
   gameInterval = setInterval(() => {
     time--;
     timeDisplay.textContent = time;
-
     if (time <= 0) endGame();
   }, 1000);
 
   boxInterval = setInterval(createBox, 700);
 }
 
-startGame();
+function endGame() {
+  clearInterval(gameInterval);
+  clearInterval(boxInterval);
+
+  finalScore.textContent = score;
+  show(gameOverScreen);
+}
+
+function goMenu() {
+  show(menu);
+}
 </script>
 
 </body>
