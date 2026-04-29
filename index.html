@@ -79,6 +79,13 @@ button {
 
 <!-- MENU -->
 
+  <div id="hud">
+  ⭐ Pontos: <span id="score">0</span> |
+  ⏱️ Tempo: <span id="time">30</span> |
+  ❤️ Vidas: <span id="lives">3</span> |
+  🔥 Combo: <span id="combo">0</span>
+</div>
+
 <div id="menu" class="screen active">
   <h1>🎯 Jogo de Cliques</h1>
   <button onclick="startGame()">▶️ Jogar</button>
@@ -107,56 +114,58 @@ button {
   <button onclick="goMenu()">Voltar</button>
 </div>
 
-<script>
-const menu = document.getElementById("menu");
-const gameScreen = document.getElementById("gameScreen");
-const gameOverScreen = document.getElementById("gameOver");
-
+  <script>
 const gameArea = document.getElementById("game");
 
 const scoreDisplay = document.getElementById("score");
 const timeDisplay = document.getElementById("time");
 const livesDisplay = document.getElementById("lives");
-const finalScore = document.getElementById("finalScore");
+const comboDisplay = document.getElementById("combo");
 
-const soundBtn = document.getElementById("soundBtn");
+let score = 0;
+let time = 30;
+let lives = 3;
 
-let score, time, lives;
-let gameInterval, boxInterval;
-let soundOn = true;
+let combo = 0;
 
-let audioCtx = null;
+let gameInterval;
+let boxInterval;
 
-function initAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
+function getMultiplier() {
+  if (combo >= 7) return 3;
+  if (combo >= 3) return 2;
+  return 1;
 }
 
-function playSound(freq) {
-  if (!soundOn || !audioCtx) return;
-
-  const osc = audioCtx.createOscillator();
-  osc.frequency.value = freq;
-  osc.connect(audioCtx.destination);
-  osc.start();
-  setTimeout(() => osc.stop(), 100);
+function updateHUD() {
+  scoreDisplay.textContent = score;
+  comboDisplay.textContent = combo;
+  livesDisplay.textContent = lives;
+  timeDisplay.textContent = time;
 }
 
-function toggleSound() {
-  soundOn = !soundOn;
-  soundBtn.textContent = soundOn ? "🔊 Som" : "🔇 Mudo";
+function playEffect(x, y, text, color) {
+  const el = document.createElement("div");
+  el.textContent = text;
+  el.style.position = "absolute";
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+  el.style.color = color;
+  el.style.fontSize = "20px";
+  el.style.fontWeight = "bold";
+  el.style.pointerEvents = "none";
+  el.style.transition = "all 0.5s ease";
+
+  document.body.appendChild(el);
+
+  setTimeout(() => {
+    el.style.transform = "translateY(-30px)";
+    el.style.opacity = "0";
+  }, 10);
+
+  setTimeout(() => el.remove(), 500);
 }
 
-/* telas */
-function show(screen) {
-  menu.classList.remove("active");
-  gameScreen.classList.remove("active");
-  gameOverScreen.classList.remove("active");
-  screen.classList.add("active");
-}
-
-/* jogo */
 function createBox() {
   if (gameArea.children.length >= 8) return;
 
@@ -182,17 +191,34 @@ function createBox() {
     box.classList.add("bad");
   }
 
-  box.onclick = () => {
-    if (type === "good") { score++; playSound(600); }
-    if (type === "bad") { score--; playSound(200); }
-    if (type === "gold") { score += 3; playSound(900); }
-    if (type === "bomb") {
-      lives--;
-      livesDisplay.textContent = lives;
-      playSound(100);
+  box.onclick = (e) => {
+    const mult = getMultiplier();
+
+    if (type === "good") {
+      score += 1 * mult;
+      combo++;
+      playEffect(e.clientX, e.clientY, "+" + (1 * mult), "#4caf50");
     }
 
-    scoreDisplay.textContent = score;
+    if (type === "bad") {
+      score -= 1;
+      combo = 0;
+      playEffect(e.clientX, e.clientY, "-1", "#f44336");
+    }
+
+    if (type === "gold") {
+      score += 3 * mult;
+      combo++;
+      playEffect(e.clientX, e.clientY, "+" + (3 * mult), "gold");
+    }
+
+    if (type === "bomb") {
+      lives--;
+      combo = 0;
+      playEffect(e.clientX, e.clientY, "💥", "black");
+    }
+
+    updateHUD();
 
     box.style.transform = "scale(1.4)";
     box.style.opacity = "0";
@@ -210,44 +236,33 @@ function createBox() {
 }
 
 function startGame() {
-  initAudio(); // 🔥 garante som funcionando após clique
-
   score = 0;
   time = 30;
   lives = 3;
-
-  scoreDisplay.textContent = score;
-  timeDisplay.textContent = time;
-  livesDisplay.textContent = lives;
+  combo = 0;
 
   gameArea.innerHTML = "";
 
-  show(gameScreen);
+  updateHUD();
 
   clearInterval(gameInterval);
   clearInterval(boxInterval);
 
   gameInterval = setInterval(() => {
     time--;
-    timeDisplay.textContent = time;
+    updateHUD();
     if (time <= 0) endGame();
   }, 1000);
 
-  boxInterval = setInterval(createBox, 700);
+  boxInterval = setInterval(createBox, 650);
 }
 
 function endGame() {
   clearInterval(gameInterval);
   clearInterval(boxInterval);
 
-  finalScore.textContent = score;
-  show(gameOverScreen);
-}
-
-function goMenu() {
-  show(menu);
+  alert("💀 Fim de jogo!\nPontos: " + score + "\nCombo máximo: " + combo);
 }
 </script>
-
 </body>
 </html>
