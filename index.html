@@ -115,6 +115,37 @@ const timeDisplay = document.getElementById("time");
 const livesDisplay = document.getElementById("lives");
 const comboDisplay = document.getElementById("combo");
 
+    let audioCtx;
+let soundOn = true;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playSound(freq) {
+  if (!soundOn) return;
+  if (!audioCtx) initAudio();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  osc.type = "sine";
+
+  gain.gain.value = 0.1;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  setTimeout(() => osc.stop(), 100);
+}
+
+
+    
+
 let score = 0;
 let time = 30;
 let lives = 3;
@@ -160,6 +191,22 @@ function playEffect(x, y, text, color) {
 }
 
 function createBox() {
+  if (type === "good") {
+  playSound(600);
+}
+
+if (type === "bad") {
+  playSound(200);
+}
+
+if (type === "gold") {
+  playSound(900);
+}
+
+if (type === "bomb") {
+  playSound(100);
+}
+  
   if (gameArea.children.length >= 8) return;
 
   const box = document.createElement("div");
@@ -227,8 +274,12 @@ function createBox() {
     if (box.parentNode) box.remove();
   }, 1500);
 }
+    function toggleSound() {
+  soundOn = !soundOn;
+}
 
 function startGame() {
+  initAudio();
   score = 0;
   time = 30;
   lives = 3;
