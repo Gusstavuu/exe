@@ -6,36 +6,11 @@
 <title>Jogo de Cliques</title>
 
 <style>
-  
-  .gold { background: gold; }
-.bomb { background: black; }
-
-.box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-@keyframes pop {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.box {
-  animation: pop 0.2s ease;
-}
-
-  
 body {
   font-family: Arial, sans-serif;
   text-align: center;
   background: #1e1e2f;
   color: white;
-}
-
-h1 {
-  margin-top: 20px;
 }
 
 #info {
@@ -56,15 +31,22 @@ h1 {
   height: 80px;
   border-radius: 10px;
   cursor: pointer;
-  transition: transform 0.1s;
-}
-
-.box:active {
-  transform: scale(0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  animation: pop 0.2s ease;
 }
 
 .good { background: #4caf50; }
 .bad { background: #f44336; }
+.gold { background: gold; }
+.bomb { background: black; }
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 button {
   margin-top: 15px;
@@ -83,17 +65,11 @@ button {
 <div id="info">
   Pontos: <span id="score">0</span> |
   Tempo: <span id="time">30</span>s |
+  Vidas: <span id="lives">3</span> ❤️ |
   Recorde: <span id="highscore">0</span>
 </div>
 
 <div class="game-area" id="game"></div>
-
-  <div id="info">
-  Pontos: <span id="score">0</span> |
-  Tempo: <span id="time">30</span>s |
-  Vidas: <span id="lives">3</span> ❤️ |
-  Recorde: <span id="highscore">0</span>
-</div>
 
 <button onclick="startGame()">Reiniciar</button>
 
@@ -101,25 +77,17 @@ button {
 const gameArea = document.getElementById("game");
 const scoreDisplay = document.getElementById("score");
 const timeDisplay = document.getElementById("time");
+const livesDisplay = document.getElementById("lives");
 const highscoreDisplay = document.getElementById("highscore");
 
 let score = 0;
 let time = 30;
+let lives = 3;
+
 let gameInterval;
 let boxInterval;
 
 const MAX_BOXES = 8;
-
-// som simples
-function playSound(freq) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  setTimeout(() => osc.stop(), 100);
-}
 
 function createBox() {
   if (gameArea.children.length >= MAX_BOXES) return;
@@ -127,20 +95,42 @@ function createBox() {
   const box = document.createElement("div");
   box.classList.add("box");
 
-  const isGood = Math.random() > 0.3;
-  box.classList.add(isGood ? "good" : "bad");
+  const rand = Math.random();
+  let type;
+
+  if (rand > 0.8) {
+    type = "gold";
+    box.classList.add("gold");
+    box.textContent = "⭐";
+  } else if (rand > 0.65) {
+    type = "bomb";
+    box.classList.add("bomb");
+    box.textContent = "💣";
+  } else if (rand > 0.3) {
+    type = "good";
+    box.classList.add("good");
+  } else {
+    type = "bad";
+    box.classList.add("bad");
+  }
 
   box.onclick = () => {
-    if (isGood) {
-      score++;
-      playSound(600);
-    } else {
-      score--;
-      playSound(200);
+    if (type === "good") score++;
+    if (type === "bad") score--;
+    if (type === "gold") score += 3;
+    if (type === "bomb") {
+      lives--;
+      livesDisplay.textContent = lives;
     }
 
     scoreDisplay.textContent = score;
-    box.remove();
+
+    box.style.transform = "scale(1.4)";
+    box.style.opacity = "0";
+
+    setTimeout(() => box.remove(), 100);
+
+    if (lives <= 0) endGame();
   };
 
   gameArea.appendChild(box);
@@ -159,155 +149,35 @@ function updateHighscore() {
   highscoreDisplay.textContent = highscore;
 }
 
+function endGame() {
+  clearInterval(gameInterval);
+  clearInterval(boxInterval);
+  updateHighscore();
+  alert("💀 Game Over! Pontos: " + score);
+}
+
 function startGame() {
-  // reset
   score = 0;
   time = 30;
+  lives = 3;
+
   gameArea.innerHTML = "";
+
   scoreDisplay.textContent = score;
   timeDisplay.textContent = time;
+  livesDisplay.textContent = lives;
 
   clearInterval(gameInterval);
   clearInterval(boxInterval);
 
-  updateHighscore();
-
-  // timer
   gameInterval = setInterval(() => {
     time--;
     timeDisplay.textContent = time;
 
-    if (time <= 0) {
-      clearInterval(gameInterval);
-      clearInterval(boxInterval);
-      updateHighscore();
-      alert("Fim de jogo! Pontuação: " + score);
-    }
+    if (time <= 0) endGame();
   }, 1000);
 
-  // geração de caixas
   boxInterval = setInterval(createBox, 700);
-}
-
-// iniciar automaticamente
-startGame();
-</script>
-<script>
-const gameArea = document.getElementById("game");
-const scoreDisplay = document.getElementById("score");
-const timeDisplay = document.getElementById("time");
-const highscoreDisplay = document.getElementById("highscore");
-
-let score = 0;
-let time = 30;
-let level = 1;
-
-let gameInterval;
-let boxInterval;
-
-let spawnSpeed = 700;
-let boxLifetime = 1500;
-
-const MAX_BOXES = 8;
-
-function playSound(freq) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  osc.frequency.value = freq;
-  osc.connect(ctx.destination);
-  osc.start();
-  setTimeout(() => osc.stop(), 100);
-}
-
-function updateLevel() {
-  const newLevel = Math.floor(score / 5) + 1;
-
-  if (newLevel !== level) {
-    level = newLevel;
-
-    // aumenta dificuldade
-    spawnSpeed = Math.max(300, spawnSpeed - 50);
-    boxLifetime = Math.max(600, boxLifetime - 100);
-
-    clearInterval(boxInterval);
-    boxInterval = setInterval(createBox, spawnSpeed);
-
-    document.title = "Nível " + level + " 🔥";
-  }
-}
-
-function createBox() {
-  if (gameArea.children.length >= MAX_BOXES) return;
-
-  const box = document.createElement("div");
-  box.classList.add("box");
-
-  const isGood = Math.random() > 0.3;
-  box.classList.add(isGood ? "good" : "bad");
-
-  box.onclick = () => {
-    score += isGood ? 1 : -1;
-
-    // efeito visual
-    box.style.transform = "scale(1.3)";
-    box.style.opacity = "0.5";
-
-    playSound(isGood ? 600 : 200);
-
-    scoreDisplay.textContent = score;
-
-    updateLevel();
-
-    setTimeout(() => box.remove(), 100);
-  };
-
-  gameArea.appendChild(box);
-
-  setTimeout(() => {
-    if (box.parentNode) box.remove();
-  }, boxLifetime);
-}
-
-function updateHighscore() {
-  let highscore = localStorage.getItem("highscore") || 0;
-  if (score > highscore) {
-    localStorage.setItem("highscore", score);
-    highscore = score;
-  }
-  highscoreDisplay.textContent = highscore;
-}
-
-function startGame() {
-  score = 0;
-  time = 30;
-  level = 1;
-
-  spawnSpeed = 700;
-  boxLifetime = 1500;
-
-  gameArea.innerHTML = "";
-
-  scoreDisplay.textContent = score;
-  timeDisplay.textContent = time;
-
-  clearInterval(gameInterval);
-  clearInterval(boxInterval);
-
-  updateHighscore();
-
-  gameInterval = setInterval(() => {
-    time--;
-    timeDisplay.textContent = time;
-
-    if (time <= 0) {
-      clearInterval(gameInterval);
-      clearInterval(boxInterval);
-      updateHighscore();
-      alert("Fim de jogo! Pontuação: " + score);
-    }
-  }, 1000);
-
-  boxInterval = setInterval(createBox, spawnSpeed);
 }
 
 startGame();
