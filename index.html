@@ -2,11 +2,13 @@
 const gameArea = document.getElementById("game");
 const scoreDisplay = document.getElementById("score");
 const timeDisplay = document.getElementById("time");
+const livesDisplay = document.getElementById("lives");
 const highscoreDisplay = document.getElementById("highscore");
 
 let score = 0;
 let time = 30;
 let level = 1;
+let lives = 3;
 
 let gameInterval;
 let boxInterval;
@@ -31,9 +33,8 @@ function updateLevel() {
   if (newLevel !== level) {
     level = newLevel;
 
-    // aumenta dificuldade
-    spawnSpeed = Math.max(300, spawnSpeed - 50);
-    boxLifetime = Math.max(600, boxLifetime - 100);
+    spawnSpeed = Math.max(250, spawnSpeed - 50);
+    boxLifetime = Math.max(500, boxLifetime - 100);
 
     clearInterval(boxInterval);
     boxInterval = setInterval(createBox, spawnSpeed);
@@ -48,23 +49,53 @@ function createBox() {
   const box = document.createElement("div");
   box.classList.add("box");
 
-  const isGood = Math.random() > 0.3;
-  box.classList.add(isGood ? "good" : "bad");
+  const rand = Math.random();
+
+  let type;
+
+  if (rand > 0.8) {
+    type = "gold";
+    box.classList.add("gold");
+    box.textContent = "⭐";
+  } else if (rand > 0.65) {
+    type = "bomb";
+    box.classList.add("bomb");
+    box.textContent = "💣";
+  } else if (rand > 0.3) {
+    type = "good";
+    box.classList.add("good");
+  } else {
+    type = "bad";
+    box.classList.add("bad");
+  }
 
   box.onclick = () => {
-    score += isGood ? 1 : -1;
+    if (type === "good") {
+      score += 1;
+      playSound(600);
+    } else if (type === "bad") {
+      score -= 1;
+      playSound(200);
+    } else if (type === "gold") {
+      score += 3;
+      playSound(900);
+    } else if (type === "bomb") {
+      lives--;
+      livesDisplay.textContent = lives;
+      playSound(100);
+    }
 
     // efeito visual
-    box.style.transform = "scale(1.3)";
-    box.style.opacity = "0.5";
-
-    playSound(isGood ? 600 : 200);
+    box.style.transform = "scale(1.4)";
+    box.style.opacity = "0";
 
     scoreDisplay.textContent = score;
 
     updateLevel();
 
     setTimeout(() => box.remove(), 100);
+
+    checkGameOver();
   };
 
   gameArea.appendChild(box);
@@ -72,6 +103,12 @@ function createBox() {
   setTimeout(() => {
     if (box.parentNode) box.remove();
   }, boxLifetime);
+}
+
+function checkGameOver() {
+  if (lives <= 0) {
+    endGame();
+  }
 }
 
 function updateHighscore() {
@@ -83,10 +120,18 @@ function updateHighscore() {
   highscoreDisplay.textContent = highscore;
 }
 
+function endGame() {
+  clearInterval(gameInterval);
+  clearInterval(boxInterval);
+  updateHighscore();
+  alert("💀 Game Over! Pontos: " + score);
+}
+
 function startGame() {
   score = 0;
   time = 30;
   level = 1;
+  lives = 3;
 
   spawnSpeed = 700;
   boxLifetime = 1500;
@@ -95,6 +140,7 @@ function startGame() {
 
   scoreDisplay.textContent = score;
   timeDisplay.textContent = time;
+  livesDisplay.textContent = lives;
 
   clearInterval(gameInterval);
   clearInterval(boxInterval);
@@ -106,10 +152,7 @@ function startGame() {
     timeDisplay.textContent = time;
 
     if (time <= 0) {
-      clearInterval(gameInterval);
-      clearInterval(boxInterval);
-      updateHighscore();
-      alert("Fim de jogo! Pontuação: " + score);
+      endGame();
     }
   }, 1000);
 
