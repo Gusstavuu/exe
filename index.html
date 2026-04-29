@@ -11,10 +11,6 @@
       color: white;
     }
 
-    h1 {
-      margin-top: 20px;
-    }
-
     #score {
       font-size: 24px;
       margin: 10px;
@@ -41,60 +37,49 @@
       transform: scale(1.1);
     }
 
-    .good {
-      background: #4caf50;
-    }
-
-    .bad {
-      background: #f44336;
-    }
+    .good { background: #4caf50; }
+    .bad { background: #f44336; }
   </style>
 </head>
 <body>
 
-  <h1>🎯 Jogo de Cliques</h1>
-  <div id="score">Pontos: 0</div>
+<h1>🎯 Jogo de Cliques</h1>
+<div id="score">Pontos: 0</div>
+<div class="game-area" id="game"></div>
 
-  <div class="game-area" id="game"></div>
+<script>
+const gameArea = document.getElementById("game");
+const scoreDisplay = document.getElementById("score");
 
-  <script>
-    const gameArea = document.getElementById("game");
-    const scoreDisplay = document.getElementById("score");
+let score = 0;
+const MAX_BOXES = 8;
 
-    let score = 0;
+function createBox() {
+  if (gameArea.children.length >= MAX_BOXES) return;
 
-    function createBox() {
-      const box = document.createElement("div");
-      box.classList.add("box");
+  const box = document.createElement("div");
+  box.classList.add("box");
 
-      // Decide se é boa ou ruim
-      const isGood = Math.random() > 0.3;
+  const isGood = Math.random() > 0.3;
+  box.classList.add(isGood ? "good" : "bad");
 
-      if (isGood) {
-        box.classList.add("good");
-      } else {
-        box.classList.add("bad");
-      }
+  box.addEventListener("click", () => {
+    score += isGood ? 1 : -1;
+    scoreDisplay.textContent = "Pontos: " + score;
+    box.remove();
+  });
 
-      box.addEventListener("click", () => {
-        if (isGood) {
-          score++;
-        } else {
-          score--;
-        }
-        scoreDisplay.textContent = "Pontos: " + score;
-        box.remove();
-        createBox();
-      });
+  gameArea.appendChild(box);
 
-      gameArea.appendChild(box);
-    }
+  // caixa desaparece sozinha depois de um tempo
+  setTimeout(() => {
+    if (box.parentNode) box.remove();
+  }, 1500);
+}
 
-    // Criar várias caixas iniciais
-    for (let i = 0; i < 8; i++) {
-      createBox();
-    }
-  </script>
+// gera caixas continuamente
+setInterval(createBox, 800);
+</script>
 
 </body>
 </html>
