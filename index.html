@@ -90,9 +90,10 @@ button {
 
 <div id="gameScreen" class="screen">
   <div id="hud">
-    Pontos: <span id="score">0</span> |
-    Tempo: <span id="time">30</span> |
-    Vidas: <span id="lives">3</span>
+  ⭐ Pontos: <span id="score">0</span> |
+  ⏱️ Tempo: <span id="time">30</span> |
+  ❤️ Vidas: <span id="lives">3</span> |
+  🔥 Combo: <span id="combo">0</span>
   </div>
 
   <div class="game-area" id="game"></div>
@@ -110,6 +111,10 @@ button {
 </div>
 
   <script>
+    const menu = document.getElementById("menu");
+const gameScreen = document.getElementById("gameScreen");
+const gameOver = document.getElementById("gameOver");
+
 const gameArea = document.getElementById("game");
 
 const scoreDisplay = document.getElementById("score");
@@ -237,8 +242,11 @@ function startGame() {
   combo = 0;
 
   gameArea.innerHTML = "";
-
   updateHUD();
+
+  menu.classList.remove("active");
+  gameOver.classList.remove("active");
+  gameScreen.classList.add("active");
 
   clearInterval(gameInterval);
   clearInterval(boxInterval);
@@ -246,6 +254,7 @@ function startGame() {
   gameInterval = setInterval(() => {
     time--;
     updateHUD();
+
     if (time <= 0) endGame();
   }, 1000);
 
@@ -255,6 +264,17 @@ function startGame() {
 function endGame() {
   clearInterval(gameInterval);
   clearInterval(boxInterval);
+
+  finalScore.textContent = score;
+
+  gameScreen.classList.remove("active");
+  gameOver.classList.add("active");
+}
+
+    function goMenu() {
+  gameOver.classList.remove("active");
+  menu.classList.add("active");
+}
 
   alert("💀 Fim de jogo!\nPontos: " + score + "\nCombo máximo: " + combo);
 }
